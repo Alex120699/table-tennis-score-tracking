@@ -1,0 +1,10 @@
+# OCR (API 3.x: TextRecognition). Incluye numpy y opencv-contrib-python como
+# dependencias; no añadir otro paquete de OpenCV o se pisarán el módulo cv2.
+paddlepaddle>=3.0
+paddleocr>=3.0
+
+# Descarga de vídeos desde URL (YouTube, etc.)
+yt-dlp[default]
+
+# Interfaz web (app.py)
+flask

@@ -1,0 +1,34 @@
+{
+  "video_path": "videos/partido.mp4",
+  "output_csv": "score.csv",
+  "roi": {
+    "x": 1355,
+    "y": 1112,
+    "w": 145,
+    "h": 68
+  },
+  "interval_seconds": 1.0,
+  "stable_samples": 3,
+  "download": {
+    "dir": "videos",
+    "max_height": 1080
+  },
+  "preprocess": {
+    "line_height": 48,
+    "pad": 4,
+    "shear": 0.0
+  },
+  "calibration_time": 0.0,
+  "track": {
+    "enabled": true,
+    "margin": 60,
+    "min_score": 0.5,
+    "max_step": 20,
+    "strong_score": 0.85
+  },
+  "ocr": {
+    "model": "PP-OCRv6_medium_rec",
+    "device": "cpu",
+    "min_confidence": 0.85
+  }
+}

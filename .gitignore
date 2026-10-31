@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Vídeos descargados y datos locales (historial, logs, miniaturas)
+videos/
+data/
+*.mp4
+*.mkv
+*.webm
+
+# Salidas generadas
+score.csv
+calibracion*.png
+
+# Imágenes y archivos de prueba
+sample_frame.png
+roi_test.png
+roi_digits.png
+agent_test.txt
+
+# Configuración de editores / herramientas
+.claude/
+.continue/
+.vscode/
+.idea/

@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marcador Tenis de Mesa</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #f4f4f2;
+  --surface-1: #fcfcfb;
+  --surface-2: #efeeea;
+  --border: #dddcd7;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --accent: #2a78d6;
+  --accent-ink: #ffffff;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --grid: #e6e5e1;
+  --danger: #c4312f;
+  --good: #1a7f37;
+  --sel: #e5283f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111110; --surface-1: #1a1a19; --surface-2: #232321; --border: #33322f;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+    --accent: #3987e5; --series-1: #3987e5; --series-2: #d95926; --grid: #2a2a28;
+    --danger: #e66767; --good: #4cb26a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111110; --surface-1: #1a1a19; --surface-2: #232321; --border: #33322f;
+  --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+  --accent: #3987e5; --series-1: #3987e5; --series-2: #d95926; --grid: #2a2a28;
+  --danger: #e66767; --good: #4cb26a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text-primary);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+a { color: var(--accent); }
+header.top {
+  position: sticky; top: 0; z-index: 5; background: var(--surface-1); border-bottom: 1px solid var(--border);
+}
+header.top .in { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+header.top .brand { font-weight: 700; color: inherit; text-decoration: none; margin-right: auto; }
+header.top nav { display: flex; gap: 6px; }
+header.top nav a { text-decoration: none; color: var(--text-secondary); padding: 6px 10px; border-radius: 6px; }
+header.top nav a.active { color: var(--text-primary); background: var(--surface-2); }
+#job-pill { font-size: 13px; color: var(--text-secondary); text-decoration: none; }
+main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 64px; }
+h1 { font-size: 22px; margin: 0 0 4px; }
+.sub { color: var(--text-secondary); margin: 0 0 18px; }
+section.card {
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px;
+  padding: 18px; margin-bottom: 16px;
+}
+section.card h2 { font-size: 16px; margin: 0 0 12px; display: flex; gap: 8px; align-items: baseline; }
+section.card h2 .n { color: var(--text-muted); }
+.hint { color: var(--text-secondary); font-size: 14px; margin: 4px 0 10px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+input[type=text], input[type=search], input[type=number], select {
+  font: inherit; color: inherit; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 7px 10px; min-width: 0;
+}
+input.grow { flex: 1 1 320px; }
+input[type=number] { width: 90px; }
+input[type=range] { flex: 1 1 200px; }
+button, .btn {
+  font: inherit; border: 1px solid var(--border); background: var(--bg); color: inherit;
+  border-radius: 6px; padding: 7px 14px; cursor: pointer; text-decoration: none; display: inline-block;
+}
+button.primary, .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.danger { color: var(--danger); }
+button:disabled { opacity: .5; cursor: default; }
+.progress { height: 6px; background: var(--grid); border-radius: 3px; overflow: hidden; margin-top: 10px; }
+.progress > div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+.status { color: var(--text-secondary); font-size: 14px; margin-top: 6px; min-height: 1.4em; }
+.status.error { color: var(--danger); }
+.hidden { display: none !important; }
+.muted { color: var(--text-muted); }
+label.inline { display: flex; gap: 6px; align-items: center; color: var(--text-secondary); font-size: 14px; }
+
+/* calibración */
+canvas.pick { width: 100%; height: auto; display: block; cursor: crosshair; border-radius: 6px; background: #000; touch-action: none; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 14px; }
+@media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+.panel-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.reading { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; margin: 8px 0 2px; }
+.reading small { font-size: 13px; font-weight: 400; color: var(--text-muted); }
+
+/* historial */
+.toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+.toolbar input { flex: 1 1 260px; }
+.matches { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.match {
+  background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+  text-decoration: none; color: inherit; display: flex; flex-direction: column;
+}
+.match:hover { border-color: var(--text-muted); }
+.match img, .match .noimg { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block; background: var(--surface-2); }
+.match .body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 4px; }
+.match .players { font-weight: 600; }
+.match .result { font-variant-numeric: tabular-nums; }
+.match .meta { font-size: 13px; color: var(--text-muted); }
+.badge { font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-secondary); }
+.game.active { border-color: var(--accent); color: var(--text-primary); }
+button.game { background: none; color: inherit; cursor: pointer; font: inherit; font-size: 14px; }
+.empty { text-align: center; padding: 48px 16px; color: var(--text-secondary); }
+
+/* ficha */
+.match-head { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.banner { font-size: 26px; font-weight: 700; margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
+.games { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.game { border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-size: 14px; }
+.game b { font-variant-numeric: tabular-nums; }
+.chart-wrap { position: relative; height: 320px; margin-top: 10px; }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--text-secondary); margin-top: 8px; }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.detail-grid { display: grid; grid-template-columns: 1fr 380px; gap: 16px; align-items: start; }
+@media (max-width: 900px) { .detail-grid { grid-template-columns: 1fr; } }
+.viewer img { width: 100%; border-radius: 6px; display: block; background: #000; }
+.viewer .cap { font-size: 14px; color: var(--text-secondary); margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+@media (min-width: 901px) { .viewer { position: sticky; top: 64px; } }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+th { color: var(--text-secondary); font-weight: 600; font-size: 13px; position: sticky; top: 0; background: var(--surface-1); }
+tbody tr { cursor: pointer; }
+tbody tr:hover, tbody tr.sel { background: var(--surface-2); }
+.table-scroll { max-height: 520px; overflow: auto; }
+tbody.static tr { cursor: default; }
+tr.editing { background: var(--surface-2); }
+tr.editing input { width: 52px; padding: 3px 6px; }
+tr.editing input.t-in { width: 72px; }
+td.actions { white-space: nowrap; }
+td.actions button, tr.editing button { padding: 3px 8px; font-size: 13px; }
+.badge.manual { border-color: var(--accent); color: var(--accent); }
+
+/* visor: recuadro del OCR sobre el fotograma */
+.frame-wrap { position: relative; line-height: 0; }
+.frame-wrap img { width: 100%; border-radius: 6px; background: #000; }
+.roi-box { position: absolute; border: 2px solid var(--sel); border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.6); pointer-events: none; }
+.board-img { display: block; width: 100%; max-height: 120px; object-fit: contain; image-rendering: pixelated;
+  background: #000; border-radius: 6px; margin: 8px 0; }
+.ocr-table td { padding: 4px 6px; font-size: 13px; }
+.ocr-table tr { cursor: pointer; }
+.ocr-table tr.now td { font-weight: 700; color: var(--text-primary); }
+.ocr-table tr.confirm td:first-child::before { content: "✓ "; color: var(--good); }
+tbody.static tr:hover { background: none; }
+
+/* comparación A vs B */
+.cmp-head, .cmp-row { display: grid; grid-template-columns: 1fr minmax(120px, 200px) 1fr; gap: 12px; align-items: center; }
+.cmp-head { font-weight: 600; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.cmp-head :first-child, .cmp-row .a { text-align: right; }
+.cmp-row { padding: 8px 0; border-bottom: 1px solid var(--border); }
+.cmp-row .lbl { text-align: center; color: var(--text-secondary); font-size: 13px; }
+.cmp-row .v { font-variant-numeric: tabular-nums; }
+.cmp-row .v small { color: var(--text-muted); }
+.meter { height: 4px; background: var(--grid); border-radius: 2px; margin-top: 5px; display: flex; }
+.cmp-row .a .meter { justify-content: flex-end; }
+.meter i { display: block; height: 100%; border-radius: 2px; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin: 0 6px; vertical-align: baseline; }
+
+/* perfil */
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.tile .k { font-size: 13px; color: var(--text-secondary); }
+.tile .n { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 2px; }
+.tile .s { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="in">
+    <a class="brand" href="#/">Marcador TT</a>
+    <a id="job-pill" class="hidden" href="#/"></a>
+    <nav>
+      <a href="#/" data-nav="history">Historial</a>
+      <a href="#/jugadores" data-nav="players">Jugadores</a>
+      <a href="#/nuevo" data-nav="new">Nuevo análisis</a>
+      <a href="/api/logs" target="_blank" rel="noopener" title="Log general del servidor">Registro</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- ======================= Historial ======================= -->
+  <div id="view-history" class="hidden">
+    <h1>Historial de partidos</h1>
+    <p class="sub">Todos los vídeos analizados. Haz clic en un partido para ver su evolución.</p>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Buscar por jugador o título">
+      <a class="btn primary" href="#/nuevo">Nuevo análisis</a>
+    </div>
+    <div class="matches" id="match-list"></div>
+    <div class="empty hidden" id="match-empty">
+      Aún no hay partidos analizados.<br><br><a class="btn primary" href="#/nuevo">Analizar el primero</a>
+    </div>
+  </div>
+
+  <!-- ======================= Nuevo análisis ======================= -->
+  <div id="view-new" class="hidden">
+    <h1>Nuevo análisis</h1>
+    <p class="sub">Pega el vídeo, marca dónde está el marcador y deja que el OCR lea el partido.</p>
+
+    <section class="card">
+      <h2><span class="n">1</span> Vídeo</h2>
+      <div class="row">
+        <input id="source" class="grow" type="text" placeholder="Enlace de YouTube o ruta local del vídeo">
+        <button id="btn-load" class="primary">Cargar</button>
+      </div>
+      <div class="progress hidden" id="dl-progress"><div></div></div>
+      <div class="status" id="video-status"></div>
+    </section>
+
+    <section class="card hidden" id="s-calib">
+      <h2><span class="n">2</span> Marcador</h2>
+      <div class="row">
+        <label class="inline">Fotograma</label>
+        <input id="t-range" type="range" min="0" step="1">
+        <input id="t-num" type="number" min="0" step="1"> <span class="muted" id="t-fmt"></span>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <span class="muted" style="font-size:14px">Posiciones de cámara:</span>
+        <span class="games" id="seg-chips" style="margin:0"></span>
+        <button id="btn-add-seg" title="Úsalo si la cámara cambia de sitio durante el vídeo">+ Nueva posición desde este fotograma</button>
+        <button id="btn-del-seg" class="danger hidden">Quitar esta posición</button>
+      </div>
+      <p class="hint" id="frame-hint">Arrastra un rectángulo amplio alrededor del marcador.</p>
+      <canvas id="frame-canvas" class="pick"></canvas>
+      <div class="grid2">
+        <div id="zoom-panel" class="hidden">
+          <div class="panel-title">Ajusta el marcador</div>
+          <p class="hint">Arrastra un rectángulo ajustado <b>solo a las cuatro cifras</b>: sin las rayas o el logo de debajo ni la mano del árbitro.</p>
+          <canvas id="zoom-canvas" class="pick"></canvas>
+        </div>
+        <div id="board-panel" class="hidden">
+          <div class="panel-title">Lectura</div>
+          <p class="hint">Si las cifras salen inclinadas, endérezalas y comprueba la lectura.</p>
+          <div class="row">
+            <label class="inline" for="shear">Inclinación</label>
+            <input id="shear" type="range" min="-0.8" max="0.8" step="0.02" value="0">
+            <span class="muted" id="shear-val">0.00</span>
+          </div>
+          <canvas id="board-canvas" class="pick" style="cursor:default;margin-top:8px"></canvas>
+          <div class="row" style="margin-top:10px">
+            <button id="btn-test">Probar este fotograma</button>
+            <button id="btn-test-video" class="primary">Comprobar en todo el vídeo</button>
+          </div>
+          <div class="reading" id="test-result"></div>
+          <div class="muted" id="test-raw" style="font-size:13px"></div>
+          <div class="games" id="test-samples"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card hidden" id="s-run">
+      <h2><span class="n">3</span> Partido</h2>
+      <div class="row">
+        <label class="inline">Empieza a la izquierda <input id="name1" type="text" value="Jugador A"></label>
+        <label class="inline">Empieza a la derecha <input id="name2" type="text" value="Jugador B"></label>
+        <label class="inline" title="Por defecto, la de subida a YouTube">Fecha del partido <input id="match-date" type="date"></label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <label class="inline">Al mejor de
+          <select id="best-of"><option>3</option><option selected>5</option><option>7</option></select> juegos
+        </label>
+        <label class="inline">Lectura cada
+          <select id="interval"><option value="0.5">0,5 s</option><option value="1" selected>1 s</option><option value="2">2 s</option></select>
+        </label>
+        <label class="inline">Cambio de lado del marcador
+          <select id="swap-new"><option value="auto" selected>Automático</option><option value="yes">Sí, tras cada juego</option><option value="no">No, fijo</option></select>
+        </label>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button id="btn-run" class="primary" disabled>Analizar y guardar en el historial</button>
+        <span class="status" id="run-status"></span>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======================= Jugadores ======================= -->
+  <div id="view-players" class="hidden">
+    <h1>Jugadores</h1>
+    <p class="sub">Balance de cada jugador con todos los partidos del historial.</p>
+    <div class="toolbar"><input id="player-search" type="search" placeholder="Buscar jugador"></div>
+    <section class="card">
+      <div class="table-scroll" style="max-height:none">
+        <table>
+          <thead><tr><th>Jugador</th><th>Partidos</th><th>Ganados–perdidos</th><th>Juegos</th><th>% puntos</th><th>% con saque</th><th>% al resto</th></tr></thead>
+          <tbody id="player-rows"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <!-- ======================= Perfil de jugador ======================= -->
+  <div id="view-player" class="hidden">
+    <a href="#/jugadores" class="muted" style="font-size:14px">← Jugadores</a>
+    <h1 id="p-name" style="margin-top:6px"></h1>
+    <p class="sub" id="p-sub"></p>
+    <div class="tiles" id="p-tiles"></div>
+    <section class="card" style="margin-top:16px">
+      <h2>% de puntos ganados por partido</h2>
+      <div class="chart-wrap" style="height:240px"><canvas id="p-chart" aria-label="Porcentaje de puntos ganados en cada partido"></canvas></div>
+    </section>
+    <div class="grid2" style="margin-top:0">
+      <section class="card">
+        <h2>Cara a cara</h2>
+        <table>
+          <thead><tr><th>Rival</th><th>Partidos</th><th>G–P</th><th>Juegos</th><th>% puntos</th></tr></thead>
+          <tbody id="p-h2h"></tbody>
+        </table>
+      </section>
+      <section class="card">
+        <h2>Partidos</h2>
+        <table>
+          <thead><tr><th>Fecha</th><th>Rival</th><th>Resultado</th><th>% puntos</th></tr></thead>
+          <tbody id="p-matches"></tbody>
+        </table>
+      </section>
+    </div>
+  </div>
+
+  <!-- ======================= Ficha de partido ======================= -->
+  <div id="view-match" class="hidden">
+    <div class="match-head">
+      <div>
+        <div class="muted" id="m-title"></div>
+        <div id="m-players" style="font-size:15px;margin-top:4px"></div>
+        <div class="banner" id="m-banner"></div>
+        <div class="muted" id="m-meta" style="font-size:13px"></div>
+      </div>
+      <div class="row">
+        <a class="btn" id="m-csv">Descargar CSV</a>
+        <a class="btn" id="m-log" target="_blank" rel="noopener">Ver registro</a>
+        <button id="m-reanalyze">Reanalizar</button>
+        <button id="m-delete" class="danger">Borrar</button>
+      </div>
+    </div>
+
+    <section class="card hidden" id="m-running" style="margin-top:14px">
+      <div class="row"><b>Analizando…</b><span class="status" id="m-progress-text" style="margin:0"></span>
+        <button id="m-stop" style="margin-left:auto">Detener</button></div>
+      <div class="progress"><div id="m-progress"></div></div>
+    </section>
+
+    <section class="card" style="margin-top:14px">
+      <div class="row">
+        <label class="inline">Empieza a la izquierda <input id="m-name1" type="text"></label>
+        <label class="inline">Empieza a la derecha <input id="m-name2" type="text"></label>
+        <label class="inline">Fecha del partido <input id="m-date" type="date"></label>
+        <label class="inline">Al mejor de
+          <select id="m-best-of"><option>3</option><option>5</option><option>7</option></select>
+        </label>
+        <label class="inline">Cambio de lado
+          <select id="m-swap"><option value="auto">Automático</option><option value="yes">Sí</option><option value="no">No</option></select>
+        </label>
+        <span class="muted" id="m-swap-info" style="font-size:13px"></span>
+        <label class="inline">Saca primero
+          <select id="m-first"><option value="">No sé</option><option value="0"></option><option value="1"></option></select>
+        </label>
+      </div>
+      <div class="games" id="m-games"></div>
+      <div class="chart-wrap"><canvas id="m-chart" aria-label="Evolución de los puntos de cada jugador"></canvas></div>
+      <div class="legend" id="m-legend"></div>
+    </section>
+
+    <section class="card" id="m-stats-card">
+      <h2>Estadísticas</h2>
+      <div class="cmp" id="m-stats"></div>
+      <p class="hint" id="m-stats-note"></p>
+      <h2 style="margin-top:18px">Por juego</h2>
+      <div class="table-scroll" style="max-height:none">
+        <table>
+          <thead><tr><th>Juego</th><th>Resultado</th><th>Ganador</th><th>Duración</th><th title="Puntos seguidos, jugador de la izquierda – derecha">Mayor racha</th><th title="Jugador de la izquierda – derecha">Máx. ventaja</th><th>Notas</th></tr></thead>
+          <tbody id="m-game-rows" class="static"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="detail-grid">
+      <section class="card">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <h2 style="margin:0">Puntos</h2>
+          <div class="row">
+            <span class="muted" id="m-edit-info" style="font-size:13px"></span>
+            <button id="m-restore" class="hidden">Restaurar lectura del OCR</button>
+            <button id="m-edit">Corregir puntos</button>
+          </div>
+        </div>
+        <p class="hint hidden" id="m-edit-hint">Pulsa una fila para ver su fotograma y comprobar el marcador.
+          <b>Editar</b> cambia el marcador de ese momento, <b>Borrar</b> quita una lectura errónea y
+          <b>+ Después</b> mete un punto que el OCR no leyó. Al guardar se recalculan el resultado y las estadísticas.</p>
+        <div class="status error" id="m-edit-error"></div>
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Tiempo</th><th id="m-th-score">Puntos</th><th>Juegos</th><th>Evento</th><th>Leído</th><th class="hidden" id="m-th-actions"></th></tr></thead>
+            <tbody id="m-events"></tbody>
+          </table>
+        </div>
+      </section>
+      <section class="card viewer">
+        <h2>Fotograma</h2>
+        <div class="frame-wrap hidden" id="m-frame-wrap">
+          <img id="m-frame" alt="Fotograma del momento seleccionado">
+          <div class="roi-box hidden" id="m-roi"></div>
+        </div>
+        <p class="hint" id="m-frame-hint">Haz clic en un punto de la tabla para ver ese momento y lo que leyó el OCR.</p>
+        <div class="cap hidden" id="m-frame-cap"></div>
+        <div id="m-ocr" class="hidden" style="margin-top:12px">
+          <div class="row" style="justify-content:space-between">
+            <b style="font-size:14px">Lo que leyó el OCR</b>
+            <span class="row"><button id="m-prev" title="Un segundo antes">◀ 1 s</button><button id="m-next" title="Un segundo después">1 s ▶</button></span>
+          </div>
+          <img id="m-board" class="board-img" alt="Marcador recortado tal como lo recibe el OCR">
+          <table class="ocr-table"><tbody id="m-ocr-rows" class="static"></tbody></table>
+          <p class="hint" id="m-ocr-note" style="font-size:13px"></p>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
